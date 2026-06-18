@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ラッピングトレーニング進捗トラッカー</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Meiryo', sans-serif;
+    background: #f5f5f3;
+    color: #1a1a1a;
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+
+  h1 {
+    font-size: 18px;
+    font-weight: 500;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 20px;
+  }
+
+  /* ── セレクター ── */
+  .selector {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .sel-btn {
+    padding: 6px 14px;
+    font-size: 13px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #1a1a1a;
+    cursor: pointer;
+    font-weight: 400;
+    transition: all 0.15s;
+  }
+
+  .sel-btn:hover { background: #f0f0f0; }
+
+  .sel-btn.active {
+    background: #1D9E75;
+    border-color: #1D9E75;
+    color: #fff;
+    font-weight: 500;
+  }
+
+  /* ── カード ── */
+  .card {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #E1F5EE;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 500;
+    color: #0F6E56;
+    flex-shrink: 0;
+  }
+
+  .person-name { font-size: 17px; font-weight: 500; }
+  .person-status { font-size: 12px; color: #888; margin-top: 2px; }
+
+  /* ── メトリクス ── */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .metric {
+    background: #f7f7f5;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 4px;
+  }
+
+  .metric-val {
+    font-size: 22px;
+    font-weight: 500;
+    color: #1a1a1a;
+  }
+
+  .metric-val.green { color: #0F6E56; }
+
+  /* ── ゲージ ── */
+  .gauge-section { margin-bottom: 16px; }
+
+  .gauge-row { margin-bottom: 8px; }
+
+  .gauge-label {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .gauge-outer {
+    height: 24px;
+    background: #f0f0ee;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .gauge-inner {
+    height: 100%;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #fff;
+    transition: width 0.5s ease;
+    min-width: 0;
+  }
+
+  /* ── ステップグリッド ── */
+  .divider {
+    height: 1px;
+    background: #f0f0ee;
+    margin: 16px 0;
+  }
+
+  .steps-title {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  @media (max-width: 480px) {
+    .steps-grid { grid-template-columns: repeat(2, 1fr); }
+    .metrics { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+    background: #fff;
+    transition: all 0.15s;
+  }
+
+  .step-item:hover { background: #fafafa; }
+
+  .step-item.done {
+    background: #E1F5EE;
+    border-color: #9FE1CB;
+  }
+
+  .step-check {
+    width: 18px;
+    height: 18px;
+    min-width: 18px;
+    border-radius: 4px;
+    border: 1.5px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #fff;
+    margin-top: 1px;
+  }
+
+  .step-item.done .step-check {
+    background: #1D9E75;
+    border-color: #1D9E75;
+  }
+
+  .step-body { flex: 1; min-width: 0; }
+
+  .step-text {
+    font-size: 12px;
+    color: #1a1a1a;
+    line-height: 1.4;
+  }
+
+  .step-item.done .step-text { color: #0F6E56; }
+
+  .step-hours {
+    font-size: 10px;
+    color: #aaa;
+    margin-top: 2px;
+  }
+
+  .step-item.done .step-hours { color: #1D9E75; }
+
+  .tooltip-wrap { position: relative; }
+  .tooltip-box {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 11px;
+    line-height: 1.5;
+    padding: 7px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  .tooltip-box::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1a1a1a;
+  }
+  .tooltip-label {
+    font-size: 10px;
+    color: #F5C400;
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .step-item:hover .tooltip-box { display: block; }
+
+  /* ── フッター ── */
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: #bbb;
+    margin-top: 20px;
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .print-btn {
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    border: 1.5px solid #1a1a1a;
+    background: #fff;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .print-btn:hover { background: #1a1a1a; color: #fff; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .selector { display: none !important; }
+    .save-btn, .reset-btn, .print-bar, #save-btn, #save-status { display: none !important; }
+    .card { border: none; box-shadow: none; max-width: 100%; page-break-inside: avoid; }
+    .steps-grid { grid-template-columns: repeat(2, 1fr); }
+    .print-all-cards { display: block !important; }
+    .single-card { display: none !important; }
+  }
+
+  /* ── リセットボタン ── */
+  .reset-btn {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #888;
+    cursor: pointer;
+    float: right;
+  }
+
+  .reset-btn:hover { color: #E24B4A; border-color: #E24B4A; }
+
+  .save-btn {
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    border: none;
+    background: #E8681A;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .save-btn:hover { background: #C9560F; }
+  .save-btn:disabled { background: #ccc; cursor: default; }
+  .save-status {
+    font-size: 12px;
+    color: #888;
+    margin-left: 8px;
+  }
+  .save-status.ok { color: #1D9E75; }
+  .save-status.err { color: #E24B4A; }
+</style>
+</head>
+<body>
+
+<h1>ラッピングトレーニング進捗トラッカー</h1>
+<p class="subtitle">チェックを押すと進捗が保存されます</p>
+
+<div class="selector" id="selector"></div>
+
+<div class="card" id="card"></div>
+
+<div class="print-bar" style="max-width:680px;margin:16px auto;display:flex;gap:8px;align-items:center;">
+  <button class="print-btn" onclick="printCurrent()">📄 この画面をPDF保存</button>
+  <button class="print-btn" onclick="printAll()">📋 全員分をPDF保存</button>
+</div>
+<p class="footer">データはGoogleスプレッドシートに自動保存されます　|　<a href="https://docs.google.com/spreadsheets/d/1qDKYvWaq6q4iuQiZMlXOdiP7BFmEfRqGsKYEE-nJ1gM/edit" target="_blank" style="color:#E8681A;">📊 スプレッドシートを開く</a></p>
+
+<script>
+const STEPS = [
+  { label: 'STEP1：全回転',         hours: 4, cat: '基礎',   sub: true,  pass: '全回転で出荷出来るレベル' },
+  { label: 'STEP2：半回転',         hours: 4, cat: '基礎',   sub: true,  pass: '半回転で出荷出来るレベル' },
+  { label: 'STEP3：色々な四角',      hours: 2, cat: '基礎',   sub: false, pass: 'スイマーバ、ビーボックスなどが出荷出来るレベル' },
+  { label: 'STEP4：キャラメル',      hours: 1, cat: '応用',   sub: true,  pass: 'アップリカお風呂などが出荷出来るレベル' },
+  { label: 'STEP5：巻き',           hours: 1, cat: '応用',   sub: true,  pass: '商品に合わせて巻きWが出来る' },
+  { label: 'STEP6：ストッケ',        hours: 4, cat: '特殊',   sub: true,  pass: '本体・ベビーセット・トレイが出荷出来るレベル' },
+  { label: 'STEP7：バンボ',         hours: 1, cat: '特殊',   sub: false, pass: 'マルチ・ソファーの巻き方を覚える' },
+  { label: 'STEP8：変形',           hours: 3, cat: '特殊',   sub: false, pass: '四角ではないものも臨機応変に巻ける' },
+  { label: 'STEP9：タイム研修',      hours: 4, cat: 'タイム', sub: false, pass: '四角は1分台、ラキューは1分切る、キャラメルは5分以内' },
+  { label: 'STEP10：タブレット・フロー', hours: 1, cat: 'その他', sub: false, pass: 'STEP10研修項目全てにチェックが入る' },
+];
+
+// サブ条件：STEP1・2・4・5・6（index 0,1,3,4,5）が全て完了
+const SUB_INDICES = [0, 1, 3, 4, 5];
+
+const TARGET = 25;
+
+const DEFAULT_PEOPLE = [
+  { name: '熊元',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
+  { name: '山崎',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
+  { name: '高瀬',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
+  { name: '右幸',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
+  { name: '山田',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
+  { name: '木下',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
+  { name: '頼経',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
+  { name: '寺山',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
+  { name: '広瀬',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
+  { name: '黒木',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
+  { name: '井上',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
+  { name: '中村',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
+];
+
+// ── GAS連携設定 ──
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzW6qSWlPgFish_sdpbi0pDod-nUmBWwR90yvRi8dZMKSMdVFX24ewEtpzgwyzlGCxx/exec';
+
+// 初期stateはデフォルト（GASから上書き）
+function loadState() {
+  return DEFAULT_PEOPLE.map(p => ({ ...p, checks: [...p.checks] }));
+}
+
+// GASからデータ読み込み（JSONP方式）
+function loadFromGAS() {
+  showLoading(true);
+  window._gasCallback = function(json) {
+    if (json.data && json.data.length > 0) {
+      json.data.forEach(row => {
+        const idx = state.findIndex(p => p.name === row.name);
+        if (idx >= 0) state[idx].checks = row.checks;
+      });
+    }
+    showLoading(false);
+    render();
+  };
+  const script = document.createElement('script');
+  script.src = GAS_URL + '?action=load&callback=_gasCallback&t=' + Date.now();
+  script.onerror = () => { showLoading(false); render(); };
+  document.body.appendChild(script);
+}
+
+// GASに保存（ボタン押下時のみ）
+function saveToGAS() {
+  const p = state[current];
+  const btn = document.getElementById('save-btn');
+  const status = document.getElementById('save-status');
+  if (btn) { btn.disabled = true; btn.textContent = '保存中...'; }
+  if (status) { status.textContent = ''; status.className = 'save-status'; }
+
+  window._gasSaveCallback = function(json) {
+    if (btn) { btn.disabled = false; btn.textContent = '保存する'; }
+    if (json && json.ok) {
+      if (status) { status.textContent = '✓ 保存しました'; status.className = 'save-status ok'; }
+      setTimeout(() => { if (status) status.textContent = ''; }, 3000);
+    } else {
+      if (status) { status.textContent = '✗ 保存失敗'; status.className = 'save-status err'; }
+    }
+  };
+
+  const data = encodeURIComponent(JSON.stringify({ action: 'save', name: p.name, checks: p.checks }));
+  const script = document.createElement('script');
+  script.src = GAS_URL + '?callback=_gasSaveCallback&data=' + data + '&t=' + Date.now();
+  document.body.appendChild(script);
+}
+
+function saveState() {} // チェック時は自動保存しない
+
+function showLoading(on) {
+  let el = document.getElementById('loading-bar');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-bar';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;height:3px;background:#E8681A;z-index:999;transition:opacity 0.3s';
+    document.body.prepend(el);
+  }
+  el.style.opacity = on ? '1' : '0';
+}
+
+const state = loadState();
+let current = 0;
+
+// ── 計算 ──
+function totalHours(checks) {
+  return STEPS.reduce((s, st, i) => s + (checks[i] ? st.hours : 0), 0);
+}
+
+function doneCount(checks) {
+  return checks.reduce((a, b) => a + b, 0);
+}
+
+function gaugeColor(pct) {
+  if (pct >= 100) return '#1D9E75';
+  if (pct >= 60)  return '#378ADD';
+  if (pct >= 30)  return '#BA7517';
+  return '#B4B2A9';
+}
+
+// ── 描画 ──
+function render() {
+  // セレクターボタン
+  const sel = document.getElementById('selector');
+  sel.innerHTML = '';
+  state.forEach((p, i) => {
+    const subOk  = SUB_INDICES.every(j => p.checks[j] === 1);
+    const mainOk = Math.min(100, Math.round(totalHours(p.checks) / TARGET * 100)) >= 100;
+    const btn = document.createElement('button');
+    btn.className = 'sel-btn' + (i === current ? ' active' : '');
+    if (i !== current) {
+      if (mainOk) { btn.style.background='#E8681A'; btn.style.borderColor='#E8681A'; btn.style.color='#fff'; }
+      else if (subOk) { btn.style.background='#F5C400'; btn.style.borderColor='#F5C400'; btn.style.color='#1a1a1a'; }
+    }
+    btn.textContent = p.name;
+    btn.onclick = () => { current = i; render(); };
+    sel.appendChild(btn);
+  });
+
+  const p = state[current];
+  const hours   = totalHours(p.checks);
+  const done    = doneCount(p.checks);
+  const timePct = Math.min(100, Math.round(hours / TARGET * 100));
+  const stepPct = Math.round(done / STEPS.length * 100);
+  const tColor  = gaugeColor(timePct);
+  const sColor  = gaugeColor(stepPct);
+
+  // サブ・メイン達成判定
+  const isSubOk  = SUB_INDICES.every(i => p.checks[i] === 1);
+  const isMainOk = timePct >= 100;
+  const badgeHtml = isMainOk
+    ? '<span style="background:#E1F5EE;color:#0F6E56;border:1px solid #9FE1CB;font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500;">✓ メイン達成</span>'
+    : isSubOk
+    ? '<span style="background:#E6F1FB;color:#185FA5;border:1px solid #A8CDED;font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500;">✓ サブ達成</span>'
+    : '<span style="background:#f5f5f3;color:#aaa;border:1px solid #e0e0e0;font-size:11px;padding:3px 10px;border-radius:20px;">研修中</span>';
+
+  const card = document.getElementById('card');
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="avatar">${p.name[0]}</div>
+      <div style="flex:1">
+        <div class="person-name">${p.name}さん &nbsp;${badgeHtml}</div>
+        <div class="person-status" style="margin-top:4px">サブ条件：STEP1・2・4・5・6 完了 ／ メイン条件：全STEP完了</div>
+      </div>
+      <button class="reset-btn" id="reset-btn">リセット</button>
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">累計時間</div>
+        <div class="metric-val${timePct >= 100 ? ' green' : ''}">${hours}h</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">達成率</div>
+        <div class="metric-val${timePct >= 100 ? ' green' : ''}">${timePct}%</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">完了ステップ</div>
+        <div class="metric-val">${done} / ${STEPS.length}</div>
+      </div>
+    </div>
+
+    <div class="gauge-section">
+      <div class="gauge-row">
+        <div class="gauge-label">
+          <span>時間進捗（目標 ${TARGET}h）</span>
+          <span>${hours}h / ${TARGET}h</span>
+        </div>
+        <div class="gauge-outer">
+          <div class="gauge-inner" style="width:${timePct}%; background:${tColor}">
+            ${timePct >= 18 ? timePct + '%' : ''}
+          </div>
+        </div>
+      </div>
+      <div class="gauge-row">
+        <div class="gauge-label">
+          <span>ステップ進捗（全${STEPS.length}項目）</span>
+          <span>${done} / ${STEPS.length}</span>
+        </div>
+        <div class="gauge-outer">
+          <div class="gauge-inner" style="width:${stepPct}%; background:${sColor}">
+            ${stepPct >= 18 ? stepPct + '%' : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="display:flex;align-items:center;margin-bottom:12px;">
+      <button class="save-btn" id="save-btn" onclick="saveToGAS()">保存する</button>
+      <span class="save-status" id="save-status"></span>
+      <span style="flex:1"></span>
+      <span style="font-size:11px;color:#bbb;">チェック後に保存ボタンを押してください</span>
+    </div>
+    <div class="steps-title">トレーニングステップ — クリックで完了 / 未完了を切り替え</div>
+    <div class="steps-grid" id="steps-grid"></div>
+  `;
+
+  // リセットボタン
+  card.querySelector('#reset-btn').onclick = () => {
+    if (confirm(p.name + 'さんの進捗をリセットしますか？')) {
+      state[current].checks = new Array(STEPS.length).fill(0);
+      saveState();
+      render();
+    }
+  };
+
+  // ステップ
+  const grid = card.querySelector('#steps-grid');
+  STEPS.forEach((st, i) => {
+    const isSub = SUB_INDICES.includes(i);
+    const item = document.createElement('div');
+    item.className = 'step-item tooltip-wrap' + (p.checks[i] ? ' done' : '');
+    const subTag = isSub
+      ? '<span style="font-size:9px;background:#FFF3CD;color:#856404;border:1px solid #FFEAA7;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle;">サブ必須</span>'
+      : '';
+    item.innerHTML = `
+      <div class="tooltip-box">
+        <div class="tooltip-label">合格ライン</div>
+        ${st.pass}
+      </div>
+      <div class="step-check">${p.checks[i] ? '✓' : ''}</div>
+      <div class="step-body">
+        <div class="step-text">${st.label}${subTag}</div>
+        <div class="step-hours">${st.hours}h</div>
+      </div>
+    `;
+    item.onclick = () => {
+      state[current].checks[i] = state[current].checks[i] ? 0 : 1;
+      saveState();
+      render();
+    };
+    grid.appendChild(item);
+  });
+}
+
+// 現在の人だけ印刷
+function printCurrent() {
+  window.print();
+}
+
+// 全員分を1枚に印刷
+function printAll() {
+  const printWin = window.open('', '_blank');
+  let html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+  <title>トレーニング進捗 全員分</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Meiryo', sans-serif; padding: 16px; color: #1a1a1a; }
+    h1 { font-size: 16px; margin-bottom: 16px; border-bottom: 2px solid #1a1a1a; padding-bottom: 8px; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-bottom: 16px; page-break-inside: avoid; }
+    .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; background: #E1F5EE; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; color: #0F6E56; flex-shrink:0; }
+    .name { font-size: 15px; font-weight: 500; }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 20px; margin-left: 8px; }
+    .badge-main { background: #FFE4CC; color: #C9560F; }
+    .badge-sub { background: #FFF9CC; color: #856404; }
+    .metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 10px; }
+    .metric { background: #f7f7f5; border-radius: 6px; padding: 8px 10px; }
+    .metric-label { font-size: 10px; color: #888; margin-bottom: 2px; }
+    .metric-val { font-size: 18px; font-weight: 500; }
+    .gauge-outer { height: 16px; background: #f0f0ee; border-radius: 6px; overflow: hidden; margin-bottom: 6px; }
+    .gauge-inner { height: 100%; border-radius: 6px; display:flex; align-items:center; padding-left:6px; font-size:10px; color:#fff; font-weight:500; }
+    .steps-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; margin-top: 8px; }
+    .step { padding: 6px 8px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 11px; }
+    .step.done { background: #E1F5EE; border-color: #9FE1CB; color: #0F6E56; }
+    .step .check { display: inline-block; width: 14px; height: 14px; border-radius: 3px; border: 1px solid #ccc; margin-right: 4px; vertical-align: middle; text-align:center; line-height:14px; font-size:10px; }
+    .step.done .check { background: #1D9E75; border-color: #1D9E75; color:#fff; }
+    .divider { height:1px; background:#eee; margin: 8px 0; }
+    .gauge-label { font-size:11px; color:#888; margin-bottom:3px; display:flex; justify-content:space-between; }
+  </style></head><body>
+  <h1>ラッピングトレーニング進捗　全員分</h1>`;
+
+  state.forEach(p => {
+    const hours = STEPS.reduce((s,st,i) => s+(p.checks[i]?st.hours:0), 0);
+    const done  = p.checks.reduce((a,b)=>a+b,0);
+    const timePct = Math.min(100, Math.round(hours/TARGET*100));
+    const stepPct = Math.round(done/STEPS.length*100);
+    const isMainOk = timePct >= 100;
+    const isSubOk  = SUB_INDICES.every(i => p.checks[i] === 1);
+    const badgeHtml = isMainOk
+      ? '<span class="badge badge-main">メイン達成</span>'
+      : isSubOk ? '<span class="badge badge-sub">サブ達成</span>' : '';
+
+    function gc(pct){ return pct>=100?'#1D9E75':pct>=60?'#378ADD':pct>=30?'#BA7517':'#B4B2A9'; }
+
+    html += `<div class="card">
+      <div class="card-header">
+        <div class="avatar">${p.name[0]}</div>
+        <div><span class="name">${p.name}さん</span>${badgeHtml}</div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">累計時間</div><div class="metric-val">${hours}h</div></div>
+        <div class="metric"><div class="metric-label">達成率</div><div class="metric-val">${timePct}%</div></div>
+        <div class="metric"><div class="metric-label">完了ステップ</div><div class="metric-val">${done}/${STEPS.length}</div></div>
+      </div>
+      <div class="gauge-label"><span>時間進捗（目標${TARGET}h）</span><span>${hours}h/${TARGET}h</span></div>
+      <div class="gauge-outer"><div class="gauge-inner" style="width:${timePct}%;background:${gc(timePct)}">${timePct>=18?timePct+'%':''}</div></div>
+      <div class="gauge-label"><span>ステップ進捗</span><span>${done}/${STEPS.length}</span></div>
+      <div class="gauge-outer"><div class="gauge-inner" style="width:${stepPct}%;background:${gc(stepPct)}">${stepPct>=18?stepPct+'%':''}</div></div>
+      <div class="divider"></div>
+      <div class="steps-grid">`;
+
+    STEPS.forEach((st,i) => {
+      html += `<div class="step${p.checks[i]?' done':''}">
+        <span class="check">${p.checks[i]?'✓':''}</span>${st.label}
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  html += `</body></html>`;
+  printWin.document.write(html);
+  printWin.document.close();
+  printWin.focus();
+  setTimeout(() => printWin.print(), 500);
+}
+
+loadFromGAS();
+</script>
+</body>
+</html>
