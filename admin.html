@@ -21,9 +21,10 @@ h1{
 .user{
   background:white;
   padding:15px;
-  border-radius:10px;
+  border-radius:12px;
   margin-bottom:12px;
   border:1px solid #ddd;
+  box-shadow:0 2px 6px rgba(0,0,0,0.05);
 }
 
 .bar{
@@ -58,8 +59,6 @@ margin-bottom:20px;
 "></div>
 
 <div id="list">読込中...</div>
-<div id="list">読込中...</div>
-
 <script>
 
 const GAS_URL =
@@ -122,16 +121,20 @@ font-weight:bold;
 ">
 
 <span>
-${index === 0 ? '🥇 ' :
-  index === 1 ? '🥈 ' :
-  index === 2 ? '🥉 ' :
+${index === 0 ? '🥇 1位 ' :
+  index === 1 ? '🥈 2位 ' :
+  index === 2 ? '🥉 3位 ' :
   (index+1)+'位 '}
 ${user.name}
 </span>
 
 <span>
 ${user.completed}/${user.total}
-(${user.percent}%)
+${user.percent >= 100
+ ? '🏆達成'
+ : user.percent >= 50
+ ? '🟡進行中'
+ : '🔴フォロー必要'}
 </span>
 
 </div>
@@ -160,7 +163,7 @@ ${user.completed}/${user.total}
 }
 
 loadSummary();
-
+setInterval(loadSummary, 5000);
 </script>
 
 </body>
