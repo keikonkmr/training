@@ -394,7 +394,7 @@ const DEFAULT_PEOPLE = [
   { name: '井上',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
   { name: '中村',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
 ];
-
+<div id="summary-board"></div>
 // ── GAS連携設定 ──
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzW6qSWlPgFish_sdpbi0pDod-nUmBWwR90yvRi8dZMKSMdVFX24ewEtpzgwyzlGCxx/exec';
 
@@ -700,7 +700,61 @@ function printAll() {
 }
 
 loadFromGAS();
+loadSummary();
+
+setInterval(()=>{
+  loadFromGAS();
+  loadSummary();
+},5000);
+ function loadSummary(){
+
+  jsonp(
+    GAS_URL + '?action=summary',
+    (res)=>{
+
+      const box =
+        document.getElementById('summary-board');
+
+      if(!box) return;
+
+      box.innerHTML =
+        '<h2>全体進捗ランキング</h2>';
+
+      res.data.forEach(user=>{
+
+        box.innerHTML += `
+          <div style="
+            margin:10px 0;
+            padding:10px;
+            border:1px solid #ddd;
+            border-radius:8px;
+          ">
+            <strong>${user.name}</strong>
+
+            <div style="
+              background:#eee;
+              height:20px;
+              border-radius:20px;
+              overflow:hidden;
+              margin-top:5px;
+            ">
+              <div style="
+                width:${user.percent}%;
+                background:#4CAF50;
+                height:100%;
+              "></div>
+            </div>
+
+            ${user.completed}/${user.total}
+            (${user.percent}%)
+          </div>
+        `;
+      });
+    }
+  );
+}
  setInterval(loadFromGAS, 5000);
+ 
 </script>
 </body>
 </html>
