@@ -108,6 +108,20 @@ document.getElementById('summary').innerHTML = `
 res.data.sort(
  (a,b)=>b.percent-a.percent
 );
+let rank = 1;
+
+res.data.forEach((user,index)=>{
+
+  if(index > 0 &&
+     user.percent < res.data[index-1].percent){
+    rank = index + 1;
+  }
+
+  let rankLabel =
+    rank === 1 ? '🥇 1位 ' :
+    rank === 2 ? '🥈 2位 ' :
+    rank === 3 ? '🥉 3位 ' :
+    rank + '位 ';
     res.data.forEach((user,index)=>{
 
       list.innerHTML += `
@@ -121,11 +135,7 @@ font-weight:bold;
 ">
 
 <span>
-${index === 0 ? '🥇 1位 ' :
-  index === 1 ? '🥈 2位 ' :
-  index === 2 ? '🥉 3位 ' :
-  (index+1)+'位 '}
-${user.name}
+${rankLabel}${user.name}
 </span>
 
 <span>
