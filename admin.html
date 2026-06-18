@@ -2,24 +2,110 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>管理画面</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>研修進捗管理画面</title>
+
 <style>
 body{
   font-family:sans-serif;
-  max-width:800px;
-  margin:30px auto;
+  max-width:900px;
+  margin:20px auto;
   padding:20px;
+  background:#f5f5f3;
 }
+
 h1{
   margin-bottom:20px;
 }
+
+.user{
+  background:white;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:12px;
+  border:1px solid #ddd;
+}
+
+.bar{
+  height:20px;
+  background:#eee;
+  border-radius:20px;
+  overflow:hidden;
+  margin-top:8px;
+}
+
+.fill{
+  height:100%;
+  background:#1D9E75;
+}
+
+.info{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:5px;
+}
 </style>
 </head>
+
 <body>
 
-<h1>研修進捗 管理画面</h1>
+<h1>📊 研修進捗ランキング</h1>
 
-<p>管理画面作成成功！</p>
+<div id="list">読込中...</div>
+
+<script>
+
+const GAS_URL =
+'https://script.google.com/macros/s/AKfycbzW6qSWlPgFish_sdpbi0pDod-nUmBWwR90yvRi8dZMKSMdVFX24ewEtpzgwyzlGCxx/exec';
+
+function loadSummary(){
+
+  window.summaryCallback = function(res){
+
+    const list =
+      document.getElementById('list');
+
+    list.innerHTML='';
+
+    res.data.forEach(user=>{
+
+      list.innerHTML += `
+        <div class="user">
+
+          <div class="info">
+            <strong>${user.name}</strong>
+            <span>
+              ${user.completed}/${user.total}
+              (${user.percent}%)
+            </span>
+          </div>
+
+          <div class="bar">
+            <div class="fill"
+              style="width:${user.percent}%">
+            </div>
+          </div>
+
+        </div>
+      `;
+    });
+  };
+
+  const script =
+    document.createElement('script');
+
+  script.src =
+    GAS_URL +
+    '?action=summary' +
+    '&callback=summaryCallback' +
+    '&t=' + Date.now();
+
+  document.body.appendChild(script);
+}
+
+loadSummary();
+
+</script>
 
 </body>
 </html>
