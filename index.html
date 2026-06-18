@@ -573,8 +573,8 @@ function render() {
   card.querySelector('#reset-btn').onclick = () => {
     if (confirm(p.name + 'さんの進捗をリセットしますか？')) {
       state[current].checks = new Array(STEPS.length).fill(0);
-      saveState();
       render();
+saveToGAS();
     }
   };
 
@@ -599,10 +599,11 @@ function render() {
       </div>
     `;
     item.onclick = () => {
-      state[current].checks[i] = state[current].checks[i] ? 0 : 1;
-      saveState();
-      render();
-    };
+  state[current].checks[i] =
+    state[current].checks[i] ? 0 : 1;
+  render();
+  saveToGAS();
+};
     grid.appendChild(item);
   });
 }
@@ -630,7 +631,8 @@ function printAll() {
     .badge-sub { background: #FFF9CC; color: #856404; }
     .metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 10px; }
     .metric { background: #f7f7f5; border-radius: 6px; padding: 8px 10px; }
-    .metric-label { font-size: 10px; color: #888; margin-bottom: 2px; }
+    .metric-label { font-size: 10px; color
+    #888; margin-bottom: 2px; }
     .metric-val { font-size: 18px; font-weight: 500; }
     .gauge-outer { height: 16px; background: #f0f0ee; border-radius: 6px; overflow: hidden; margin-bottom: 6px; }
     .gauge-inner { height: 100%; border-radius: 6px; display:flex; align-items:center; padding-left:6px; font-size:10px; color:#fff; font-weight:500; }
@@ -691,6 +693,7 @@ function printAll() {
 }
 
 loadFromGAS();
+ setInterval(loadFromGAS, 5000);
 </script>
 </body>
 </html>
