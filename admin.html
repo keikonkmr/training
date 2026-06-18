@@ -50,7 +50,14 @@ h1{
 <body>
 
 <h1>📊 研修進捗ランキング</h1>
+<div id="summary" style="
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+margin-bottom:20px;
+"></div>
 
+<div id="list">読込中...</div>
 <div id="list">読込中...</div>
 
 <script>
@@ -64,16 +71,57 @@ function loadSummary(){
 
     const list =
       document.getElementById('list');
+const total = res.data.length;
 
+const main = res.data.filter(
+  u => u.percent >= 100
+).length;
+
+const sub = res.data.filter(
+  u => u.completed >= 5 && u.percent < 100
+).length;
+
+const training =
+  total - main - sub;
+
+document.getElementById('summary').innerHTML = `
+<div style="background:white;padding:15px;border-radius:10px;border:1px solid #ddd;min-width:140px">
+  <div style="font-size:12px;color:#666">登録人数</div>
+  <div style="font-size:28px;font-weight:bold">${total}</div>
+</div>
+
+<div style="background:#E1F5EE;padding:15px;border-radius:10px;border:1px solid #9FE1CB;min-width:140px">
+  <div style="font-size:12px;color:#0F6E56">メイン達成</div>
+  <div style="font-size:28px;font-weight:bold">${main}</div>
+</div>
+
+<div style="background:#FFF8D6;padding:15px;border-radius:10px;border:1px solid #F5C400;min-width:140px">
+  <div style="font-size:12px;color:#856404">研修中盤</div>
+  <div style="font-size:28px;font-weight:bold">${sub}</div>
+</div>
+
+<div style="background:#F5F5F5;padding:15px;border-radius:10px;border:1px solid #ddd;min-width:140px">
+  <div style="font-size:12px;color:#666">研修中</div>
+  <div style="font-size:28px;font-weight:bold">${training}</div>
+</div>
+`;
     list.innerHTML='';
-
-    res.data.forEach(user=>{
+res.data.sort(
+ (a,b)=>b.percent-a.percent
+);
+    res.data.forEach((user,index)=>{
 
       list.innerHTML += `
         <div class="user">
 
           <div class="info">
-            <strong>${user.name}</strong>
+            <<strong>
+${index === 0 ? '🥇' :
+  index === 1 ? '🥈' :
+  index === 2 ? '🥉' :
+  (index+1)+'位'}
+  ${user.name}
+</strong>>${user.name}</strong>
             <span>
               ${user.completed}/${user.total}
               (${user.percent}%)
