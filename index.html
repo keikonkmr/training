@@ -394,7 +394,6 @@ const DEFAULT_PEOPLE = [
   { name: '井上',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
   { name: '中村',  status: '', checks: [0,0,0,0,0,0,0,0,0,0] },
 ];
-<div id="summary-board"></div>
 // ── GAS連携設定 ──
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzW6qSWlPgFish_sdpbi0pDod-nUmBWwR90yvRi8dZMKSMdVFX24ewEtpzgwyzlGCxx/exec';
 
@@ -700,14 +699,7 @@ function printAll() {
 }
 
 loadFromGAS();
-loadSummary();
-
-setInterval(()=>{
-  loadFromGAS();
-  loadSummary();
-},5000);
- function loadSummary(){
-
+ setInterval(loadFromGAS, 5000);
   jsonp(
     GAS_URL + '?action=summary',
     (res)=>{
