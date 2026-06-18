@@ -114,18 +114,27 @@ res.data.sort(
       list.innerHTML += `
         <div class="user">
 
-          <div class="info">
-            <strong>
-${index === 0 ? '🥇' :
-  index === 1 ? '🥈' :
-  index === 2 ? '🥉' :
-  (index+1)+'位'}
-</strong>>${user.name}</strong>
-            <span>
-              ${user.completed}/${user.total}
-              (${user.percent}%)
-            </span>
-          </div>
+       <div style="
+display:flex;
+justify-content:space-between;
+margin-bottom:8px;
+font-weight:bold;
+">
+
+<span>
+${index === 0 ? '🥇 ' :
+  index === 1 ? '🥈 ' :
+  index === 2 ? '🥉 ' :
+  (index+1)+'位 '}
+${user.name}
+</span>
+
+<span>
+${user.completed}/${user.total}
+(${user.percent}%)
+</span>
+
+</div>
 
           <div class="bar">
             <div class="fill"
