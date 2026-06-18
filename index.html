@@ -699,7 +699,6 @@ function printAll() {
 }
 
 loadFromGAS();
- setInterval(loadFromGAS, 5000);
   jsonp(
     GAS_URL + '?action=summary',
     (res)=>{
