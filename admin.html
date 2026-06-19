@@ -110,11 +110,12 @@ res.data.sort(
 );
 let rank = 1;
 
-res.data.forEach((user,index)=>{
+res.data.forEach((user, index) => {
 
-  if(index > 0 &&
-     user.percent < res.data[index-1].percent){
-    rank = index + 1;
+  // 1個前と「スコアが違うときだけ順位を+1」
+  if (index > 0 &&
+      user.percent < res.data[index - 1].percent) {
+    rank++;
   }
 
   let rankLabel =
