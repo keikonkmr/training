@@ -313,6 +313,14 @@
 
   .step-item.done .step-hours { color: #1D9E75; }
 
+  .step-date {
+    font-size: 10px;
+    color: #0F6E56;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .step-date.none { color: #aaa; font-weight: 400; }
+
   .tooltip-wrap { position: relative; }
   .tooltip-box {
     display: none;
@@ -486,7 +494,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbzW6qSWlPgFish_sdpbi0pD
 
 // 初期stateはデフォルト（GASから上書き）
 function loadState() {
-  return DEFAULT_PEOPLE.map(p => ({ ...p, checks: [...p.checks] }));
+  return DEFAULT_PEOPLE.map(p => ({ ...p, checks: [...p.checks], dates: STEPS.map(() => '') }));
 }
 
 // GASからデータ読み込み（JSONP方式）
@@ -496,7 +504,11 @@ function loadFromGAS() {
     if (json.data && json.data.length > 0) {
       json.data.forEach(row => {
         const idx = state.findIndex(p => p.name === row.name);
-        if (idx >= 0) state[idx].checks = row.checks;
+        if (idx >= 0) {
+          state[idx].checks = row.checks;
+          const d = Array.isArray(row.dates) ? row.dates : [];
+          state[idx].dates = STEPS.map((_, i) => d[i] || '');
+        }
       });
     }
     showLoading(false);
@@ -526,7 +538,7 @@ function saveToGAS() {
     }
   };
 
-  const data = encodeURIComponent(JSON.stringify({ action: 'save', name: p.name, checks: p.checks }));
+  const data = encodeURIComponent(JSON.stringify({ action: 'save', name: p.name, checks: p.checks, dates: p.dates }));
   const script = document.createElement('script');
   script.src = GAS_URL + '?callback=_gasSaveCallback&data=' + data + '&t=' + Date.now();
   document.body.appendChild(script);
@@ -543,6 +555,21 @@ function showLoading(on) {
     document.body.prepend(el);
   }
   el.style.opacity = on ? '1' : '0';
+}
+
+// ── 完了日 ──
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function shortDate(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-').map(Number);
+  return (y === new Date().getFullYear() ? '' : y + '/') + m + '/' + d;
+}
+function dateLabel(p, i) {
+  if (!p.checks[i]) return '';
+  return p.dates && p.dates[i] ? shortDate(p.dates[i]) + ' 完了' : '完了日なし';
 }
 
 const state = loadState();
@@ -709,6 +736,7 @@ function render() {
   card.querySelector('#reset-btn').onclick = () => {
     if (confirm(p.name + 'さんの進捗をリセットしますか？')) {
       state[current].checks = new Array(STEPS.length).fill(0);
+      state[current].dates = STEPS.map(() => '');
       render();
 saveToGAS();
     }
@@ -732,11 +760,14 @@ saveToGAS();
       <div class="step-body">
         <div class="step-text">${st.label}${subTag}</div>
         <div class="step-hours">${st.hours}h</div>
+        ${p.checks[i] ? `<div class="step-date${p.dates[i] ? '' : ' none'}">${dateLabel(p, i)}</div>` : ''}
       </div>
     `;
     item.onclick = () => {
   state[current].checks[i] =
     state[current].checks[i] ? 0 : 1;
+  state[current].dates[i] =
+    state[current].checks[i] ? todayStr() : '';
   render();
   saveToGAS();
 };
@@ -850,7 +881,7 @@ function printAll() {
 
     STEPS.forEach((st,i) => {
       html += `<div class="step${p.checks[i]?' done':''}">
-        <span class="check">${p.checks[i]?'✓':''}</span>${st.label}
+        <span class="check">${p.checks[i]?'✓':''}</span>${st.label}${p.checks[i] && p.dates[i] ? `<span style="float:right;font-size:10px;">${shortDate(p.dates[i])}</span>` : ''}
       </div>`;
     });
 
