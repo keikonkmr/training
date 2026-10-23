@@ -383,7 +383,7 @@
   @media print {
     body { background: #fff; padding: 0; }
     .selector { display: none !important; }
-    .save-btn, .reset-btn, .print-bar, #save-btn, #save-status { display: none !important; }
+    .save-btn, .reset-btn, .print-bar, #save-btn, #save-status, .lock-bar { display: none !important; }
     .card { border: none; box-shadow: none; max-width: 100%; page-break-inside: avoid; }
     .steps-grid { grid-template-columns: repeat(2, 1fr); }
     .print-all-cards { display: block !important; }
@@ -410,6 +410,31 @@
   }
 
   .reset-btn:hover { color: #E24B4A; border-color: #E24B4A; }
+  .reset-btn:disabled { color: #ccc; border-color: #eee; cursor: not-allowed; }
+
+  /* ── ロックボタン ── */
+  .lock-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 8px;
+    border: 1.5px solid #555;
+    background: #555;
+    color: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .lock-btn:hover { opacity: 0.85; }
+  .lock-btn.unlocked {
+    background: #fff;
+    border-color: #E8681A;
+    color: #E8681A;
+  }
+  .lock-hint { flex: 1 1 200px; font-size: 11px; color: #999; line-height: 1.5; }
+  .lock-hint.unlocked { color: #E8681A; }
+  .step-item.locked { cursor: default; }
+  .step-item.locked:hover { background: #E1F5EE; }
 
   .save-btn {
     padding: 8px 20px;
@@ -520,16 +545,14 @@ function loadFromGAS() {
   document.body.appendChild(script);
 }
 
-// GASに保存（ボタン押下時のみ）
+// GASに保存（チェックするたびに自動で保存）
 function saveToGAS() {
   const p = state[current];
-  const btn = document.getElementById('save-btn');
   const status = document.getElementById('save-status');
-  if (btn) { btn.disabled = true; btn.textContent = '保存中...'; }
-  if (status) { status.textContent = ''; status.className = 'save-status'; }
+  if (status) { status.textContent = '保存中...'; status.className = 'save-status'; }
 
   window._gasSaveCallback = function(json) {
-    if (btn) { btn.disabled = false; btn.textContent = '保存する'; }
+    const status = document.getElementById('save-status');
     if (json && json.ok) {
       if (status) { status.textContent = '✓ 保存しました'; status.className = 'save-status ok'; }
       setTimeout(() => { if (status) status.textContent = ''; }, 3000);
@@ -573,6 +596,7 @@ function dateLabel(p, i) {
 }
 
 const state = loadState();
+let unlocked = false; // false = ロック中（チェックを外せない）
 let current = 0;
 
 // ── 計算 ──
@@ -646,7 +670,7 @@ function render() {
       }
 
       btn.textContent = p.name;
-      btn.onclick = () => { current = i; render(); };
+      btn.onclick = () => { current = i; unlocked = false; render(); };
       grid.appendChild(btn);
     });
     wrap.appendChild(grid);
@@ -678,7 +702,7 @@ function render() {
         <div class="person-name">${p.name}さん &nbsp;${badgeHtml}</div>
         <div class="person-status" style="margin-top:4px">サブ条件：STEP1・2・4・5・6 完了 ／ メイン条件：全STEP完了</div>
       </div>
-      <button class="reset-btn" id="reset-btn">リセット</button>
+      <button class="reset-btn" id="reset-btn" ${unlocked ? '' : 'disabled title="ロックを解除すると使えます"'}>リセット</button>
     </div>
 
     <div class="metrics">
@@ -722,18 +746,26 @@ function render() {
     </div>
 
     <div class="divider"></div>
-    <div style="display:flex;align-items:center;margin-bottom:12px;">
-      <button class="save-btn" id="save-btn" onclick="saveToGAS()">保存する</button>
-      <span class="save-status" id="save-status"></span>
-      <span style="flex:1"></span>
-      <span style="font-size:11px;color:#bbb;">チェック後に保存ボタンを押してください</span>
+    <div class="lock-bar" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:12px;">
+      <button class="lock-btn${unlocked ? ' unlocked' : ''}" id="lock-btn">${unlocked ? '🔓 ロック解除中' : '🔒 ロック中'}</button>
+      <span class="lock-hint${unlocked ? ' unlocked' : ''}">${unlocked
+        ? 'チェックを外せます。終わったらボタンを押してロックしてください'
+        : 'チェックの追加のみできます。外すときはロックを解除してください'}</span>
+      <span class="save-status" id="save-status" style="margin-left:auto;white-space:nowrap;"></span>
     </div>
-    <div class="steps-title">トレーニングステップ — クリックで完了 / 未完了を切り替え</div>
+    <div class="steps-title">トレーニングステップ — クリックで完了（チェックは自動で保存されます）</div>
     <div class="steps-grid" id="steps-grid"></div>
   `;
 
-  // リセットボタン
+  // ロック / ロック解除
+  card.querySelector('#lock-btn').onclick = () => {
+    unlocked = !unlocked;
+    render();
+  };
+
+  // リセットボタン（ロック解除中のみ）
   card.querySelector('#reset-btn').onclick = () => {
+    if (!unlocked) return;
     if (confirm(p.name + 'さんの進捗をリセットしますか？')) {
       state[current].checks = new Array(STEPS.length).fill(0);
       state[current].dates = STEPS.map(() => '');
@@ -747,7 +779,7 @@ saveToGAS();
   STEPS.forEach((st, i) => {
     const isSub = SUB_INDICES.includes(i);
     const item = document.createElement('div');
-    item.className = 'step-item tooltip-wrap' + (p.checks[i] ? ' done' : '');
+    item.className = 'step-item tooltip-wrap' + (p.checks[i] ? ' done' : '') + (p.checks[i] && !unlocked ? ' locked' : '');
     const subTag = isSub
       ? '<span style="font-size:9px;background:#FFF3CD;color:#856404;border:1px solid #FFEAA7;border-radius:4px;padding:1px 5px;margin-left:4px;vertical-align:middle;">サブ必須</span>'
       : '';
@@ -764,6 +796,16 @@ saveToGAS();
       </div>
     `;
     item.onclick = () => {
+  // ロック中は、チェック済みのものを外せない
+  if (state[current].checks[i] && !unlocked) {
+    const status = document.getElementById('save-status');
+    if (status) {
+      status.textContent = '🔒 ロック中は外せません';
+      status.className = 'save-status err';
+      setTimeout(() => { if (status) status.textContent = ''; }, 2500);
+    }
+    return;
+  }
   state[current].checks[i] =
     state[current].checks[i] ? 0 : 1;
   state[current].dates[i] =
