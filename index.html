@@ -28,6 +28,13 @@
     margin-bottom: 20px;
   }
 
+  /* ── 上部をカードと同じ幅で中央にそろえる ── */
+  h1, .subtitle, .summary, .sum-bar, .selector {
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   /* ── 構成サマリー ── */
   .summary {
     display: grid;
@@ -70,14 +77,48 @@
 
   /* ── セレクター ── */
   .selector {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+    max-width: 680px;
     margin-bottom: 20px;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 12px 14px 4px;
   }
 
+  .sel-group { margin-bottom: 10px; }
+
+  .sel-group-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 6px;
+  }
+
+  .sel-group-title .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid #ccc;
+    background: #fff;
+  }
+
+  .sel-group-title .count { color: #aaa; font-weight: 400; }
+
+  .sel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    gap: 6px;
+  }
+
+  .sel-empty { font-size: 11px; color: #bbb; padding: 2px 0 6px; }
+
   .sel-btn {
-    padding: 6px 14px;
+    width: 100%;
+    white-space: nowrap;
+    padding: 8px 6px;
     font-size: 13px;
     border-radius: 8px;
     border: 1px solid #ddd;
@@ -437,6 +478,8 @@ const DEFAULT_PEOPLE = [
   { name: '向井',  status: '', checks: [0,0,0,0,0,0,0,0,0,] },
   { name: '平田',  status: '', checks: [0,0,0,0,0,0,0,0,0,] },
   { name: '細田',  status: '', checks: [0,0,0,0,0,0,0,0,0,] },
+  { name: '岩田',  status: '', checks: [0,0,0,0,0,0,0,0,0,] },
+  { name: '三山',  status: '', checks: [0,0,0,0,0,0,0,0,0,] },
 ];
 // ── GAS連携設定 ──
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzW6qSWlPgFish_sdpbi0pDod-nUmBWwR90yvRi8dZMKSMdVFX24ewEtpzgwyzlGCxx/exec';
@@ -525,33 +568,62 @@ function gaugeColor(pct) {
 function render() {
   renderSummary();
 
-  // セレクターボタン
+  // セレクターボタン（メイン達成・サブ達成・研修中に分けて表示）
   const sel = document.getElementById('selector');
   sel.innerHTML = '';
-    state.forEach((p, i) => {
+  const groups = [
+    { key: 'main',     label: 'メイン達成', dot: '#E8681A', members: [] },
+    { key: 'sub',      label: 'サブ達成',   dot: '#F5D766', members: [] },
+    { key: 'training', label: '研修中',     dot: '#fff',    members: [] },
+  ];
+  state.forEach((p, i) => {
     const subOk  = SUB_INDICES.every(j => p.checks[j] === 1);
     const mainOk = Math.min(100, Math.round(totalHours(p.checks) / TARGET * 100)) >= 100;
-    const btn = document.createElement('button');
-    btn.className = 'sel-btn' + (i === current ? ' active' : '');
+    const g = mainOk ? groups[0] : subOk ? groups[1] : groups[2];
+    g.members.push(i);
+  });
 
-    if (mainOk) {
-      btn.style.background = '#E8681A';
-      btn.style.borderColor = '#E8681A';
-      btn.style.color = '#fff';
-    } else if (subOk) {
-      btn.style.background = '#FFF3B0';
-      btn.style.borderColor = '#F5D766';
-      btn.style.color = '#7A6A00';
+  groups.forEach(g => {
+    const wrap = document.createElement('div');
+    wrap.className = 'sel-group';
+    wrap.innerHTML = `
+      <div class="sel-group-title">
+        <span class="dot" style="background:${g.dot};border-color:${g.dot === '#fff' ? '#ccc' : g.dot}"></span>
+        ${g.label}<span class="count">${g.members.length}人</span>
+      </div>`;
+    if (g.members.length === 0) {
+      wrap.innerHTML += '<div class="sel-empty">該当なし</div>';
+      sel.appendChild(wrap);
+      return;
     }
+    const grid = document.createElement('div');
+    grid.className = 'sel-grid';
+    g.members.forEach(i => {
+      const p = state[i];
+      const btn = document.createElement('button');
+      btn.className = 'sel-btn' + (i === current ? ' active' : '');
 
-    if (i === current) {
-      btn.style.borderColor = '#1D9E75';
-      btn.style.borderWidth = '2px';
-    }
+      if (g.key === 'main') {
+        btn.style.background = '#E8681A';
+        btn.style.borderColor = '#E8681A';
+        btn.style.color = '#fff';
+      } else if (g.key === 'sub') {
+        btn.style.background = '#FFF3B0';
+        btn.style.borderColor = '#F5D766';
+        btn.style.color = '#7A6A00';
+      }
 
-    btn.textContent = p.name;
-    btn.onclick = () => { current = i; render(); };
-    sel.appendChild(btn);
+      if (i === current) {
+        btn.style.borderColor = '#1D9E75';
+        btn.style.borderWidth = '2px';
+      }
+
+      btn.textContent = p.name;
+      btn.onclick = () => { current = i; render(); };
+      grid.appendChild(btn);
+    });
+    wrap.appendChild(grid);
+    sel.appendChild(wrap);
   });
 
   const p = state[current];
@@ -697,8 +769,8 @@ function renderSummary() {
       <div class="sum-val">${total}<small>人</small></div>
     </div>
     ${box('main', 'メイン達成', main, false)}
-    ${box('sub', 'サブ達成', sub, true)}
-    ${box('', '研修中', training, true)}
+    ${box('sub', 'サブ達成', sub, false)}
+    ${box('', '研修中', training, false)}
   `;
 
   const pct = n => total ? (n / total * 100) : 0;
