@@ -28,6 +28,46 @@
     margin-bottom: 20px;
   }
 
+  /* ── 構成サマリー ── */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    max-width: 680px;
+    margin-bottom: 8px;
+  }
+  .sum-box {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .sum-label { font-size: 11px; color: #888; margin-bottom: 2px; }
+  .sum-val { font-size: 22px; font-weight: 500; }
+  .sum-val small { font-size: 12px; font-weight: 400; margin-left: 2px; }
+  .sum-names { font-size: 10px; color: #888; margin-top: 4px; line-height: 1.5; }
+  .sum-box.main { background: #FFF1E6; border-color: #F5B98C; }
+  .sum-box.main .sum-label, .sum-box.main .sum-val { color: #C9560F; }
+  .sum-box.sub { background: #FFF9D9; border-color: #F5D766; }
+  .sum-box.sub .sum-label, .sum-box.sub .sum-val { color: #7A6A00; }
+  .sum-bar {
+    display: flex;
+    height: 10px;
+    max-width: 680px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #e8e8e6;
+    margin-bottom: 20px;
+  }
+  .sum-bar div {
+    height: 100%;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  @media (max-width: 480px) {
+    .summary { grid-template-columns: repeat(2, 1fr); }
+  }
+
   /* ── セレクター ── */
   .selector {
     display: flex;
@@ -349,6 +389,9 @@
 <h1>ラッピングトレーニング進捗トラッカー</h1>
 <p class="subtitle">チェックを押すと進捗が保存されます</p>
 
+<div class="summary" id="summary"></div>
+<div class="sum-bar" id="sum-bar"></div>
+
 <div class="selector" id="selector"></div>
 
 <div class="card" id="card"></div>
@@ -480,6 +523,8 @@ function gaugeColor(pct) {
 
 // ── 描画 ──
 function render() {
+  renderSummary();
+
   // セレクターボタン
   const sel = document.getElementById('selector');
   sel.innerHTML = '';
@@ -625,6 +670,42 @@ saveToGAS();
 };
     grid.appendChild(item);
   });
+}
+
+// ── 構成サマリー（メイン・サブ・研修中の人数） ──
+function renderSummary() {
+  const main = [], sub = [], training = [];
+  state.forEach(p => {
+    const mainOk = Math.min(100, Math.round(totalHours(p.checks) / TARGET * 100)) >= 100;
+    const subOk  = SUB_INDICES.every(j => p.checks[j] === 1);
+    if (mainOk) main.push(p.name);
+    else if (subOk) sub.push(p.name);
+    else training.push(p.name);
+  });
+  const total = state.length;
+
+  const box = (cls, label, names, showNames) => `
+    <div class="sum-box ${cls}">
+      <div class="sum-label">${label}</div>
+      <div class="sum-val">${names.length}<small>人</small></div>
+      ${showNames ? `<div class="sum-names">${names.map(n => `<span style="white-space:nowrap">${n}</span>`).join('・') || '—'}</div>` : ''}
+    </div>`;
+
+  document.getElementById('summary').innerHTML = `
+    <div class="sum-box">
+      <div class="sum-label">登録人数</div>
+      <div class="sum-val">${total}<small>人</small></div>
+    </div>
+    ${box('main', 'メイン達成', main, false)}
+    ${box('sub', 'サブ達成', sub, true)}
+    ${box('', '研修中', training, true)}
+  `;
+
+  const pct = n => total ? (n / total * 100) : 0;
+  document.getElementById('sum-bar').innerHTML = `
+    <div style="width:${pct(main.length)}%;background:#E8681A" title="メイン達成 ${main.length}人"></div>
+    <div style="width:${pct(sub.length)}%;background:#F5D766" title="サブ達成 ${sub.length}人"></div>
+  `;
 }
 
 // 現在の人だけ印刷
